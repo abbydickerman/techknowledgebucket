@@ -1,0 +1,15 @@
+AWS CLI
+
+Add --profile AdministratorAccess-615079229418 to the end of your code if signing in with SSO
+
+Find information about AWS resources from IP Address:
+aws ec2 describe-network-interfaces --filters Name=group-id,Values=<group-id> --region <region> --output json
+
+Find if Security Groups are being used for EC2: 
+aws ec2 describe-instances --filters "Name=instance.group-id,Values=<security-group-id>" --region us-east-1 
+
+Find if Security Groups are being used for RDS:
+aws rds describe-db-instances --filters "Name=db-security-groups.group-name,Values=<security-group-name>" --region us-east-1 
+
+Find if Security Groups are being used for elasticache:
+aws elasticache describe-cache-clusters --show-cache-node-info --query "CacheClusters[?CacheSecurityGroups[?CacheSecurityGroupName=='<security-group-name>']]" --region us-east-1
