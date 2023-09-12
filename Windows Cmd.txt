@@ -1,0 +1,3 @@
+To Sync Domain Controller - run on unsynced DC
+repadmin /syncall /AeD
+(optional: add /u)
