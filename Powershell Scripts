@@ -1,0 +1,88 @@
+
+--Show drives on server--
+Get-WmiObject -Class Win32_LogicalDisk |
+Select-Object -Property DeviceID, VolumeName, @{Label='FreeSpace (Gb)'; expression={($_.FreeSpace/1GB).ToString('F2')}},
+@{Label='Total (Gb)'; expression={($_.Size/1GB).ToString('F2')}},
+@{label='FreePercent'; expression={[Math]::Round(($_.freespace / $_.size) * 100, 2)}}|ft
+
+--Show installed software (preferred)
+$InstalledSoftware = Get-ChildItem "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall"
+foreach($obj in $InstalledSoftware){write-host $obj.GetValue('DisplayName') -NoNewline; write-host " - " -NoNewline; write-host $obj.GetValue('DisplayVersion')}
+
+--Show installed software (other)
+Get-WmiObject -Class Win32_Product
+
+---Uninstall software
+$MyApp = Get-WmiObject -Class Win32_Product | Where-Object{$_.Name -eq “New Relic Infrastructure Agent"}
+$MyApp.Uninstall()
+
+--Remove windows defender--
+Uninstall-WindowsFeature -Name Windows-Defender
+
+
+--Get AD Users from OU--
+$OUpath = 'ou=UsersOU,dc=elements,dc=local'
+$ExportPath = 'c:\temp\usersou.csv'
+Get-ADUser -Filter * -SearchBase $OUpath | Select-object DistinguishedName,Name,UserPrincipalName | Export-Csv -NoType $ExportPath
+
+--Find AD users set to password never expire
+Get-AdUser -filter { passwordNeverExpires -eq $true  -and enabled -eq $true } | Select Name, DistinguishedName
+
+--View Folder permissions--
+
+[System.Enum]::GetNames([System.Security.AccessControl.FileSystemRights])
+
+
+---Change folder permissions---
+
+-Check Access of File or Folder-
+(Get-ACL -Path "File or Folder Path).Access | Format-Table IdentityReference,FileSystemRights,AccessControlType,IsInherited,InheritanceFlags -AutoSize
+
+ -Set Group owner-
+$ACL = Get-ACL -Path "File or Folder Path"
+$Group = New-Object System.Security.Principal.NTAccount("Builtin", "Administrators")
+OR
+$ACL.SetOwner($Group)
+Set-Acl -Path "File or Folder path" -AclObject $ACL
+
+-Remove Access of Read and Allow-
+$ACL = Get-ACL -Path "File or Folder Path"
+$AccessRule = New-Object 
+System.Security.AccessControl.FileSystemAccessRule("TestUser1","Read","Allow")
+$ACL.RemoveAccessRule($AccessRule)
+$ACL | Set-Acl -Path "File or Folder Path"
+
+-Set Access of Read and Allow-
+$ACL = Get-ACL -Path "File or Folder Path"
+$AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("TestUser1","Read","Allow")
+$ACL.SetAccessRule($AccessRule)
+$ACL | Set-Acl -Path "File or Folder Path"
+
+-Setup New Shared Folder-
+New-SmbShare -Name NomDuPartage -Path "C:\Dossier\Sur\LeServeur" -FullAccess "User or Group"
+
+--Get Disk drive overview and Disk space free
+
+Get-WmiObject -Class Win32_LogicalDisk |
+Select-Object -Property DeviceID, VolumeName, @{Label='FreeSpace (Gb)'; expression={($_.FreeSpace/1GB).ToString('F2')}},
+@{Label='Total (Gb)'; expression={($_.Size/1GB).ToString('F2')}},
+@{label='FreePercent'; expression={[Math]::Round(($_.freespace / $_.size) * 100, 2)}}|ft
+
+
+----Configure Winrm Listener----
+
+See what listeners exist:
+winrm e winrm/config/listener
+
+Delete listeners:
+winrm delete winrm/config/listener?Address=*+Transport=HTTPS
+
+Add listener HTTPS:
+New-SelfSignedCertificate -DnsName APP-EXT-01 -CertStoreLocation Cert:\LocalMachine\My
+
+winrm create winrm/config/listener?Address=*+Transport=HTTPS '@{Hostname="APP-EXT-01";CertificateThumbprint="947E2B994D2E58297185D6A92520F7AD3D9F696F";port="5986"}'
+
+
+---Check who is logged on----
+query user /server:$server
+
