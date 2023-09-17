@@ -1,0 +1,16 @@
+--install printmanagement
+DISM /online /add-capability /CapabilityName:Print.Management.Console~~~~0.0.1.0
+
+
+---retrigger a single order and all the eligible events for that order to get sent to narvar/listrak/extend, you can use this command on the ERP relay console app directly on utility-01
+Note: use sparingly since it sends an order confirmation, shipping confirmation and a return/cancel email
+
+D:\APPS\ERPrelay\PROD\app>ERPrelay.Console.exe -a orderno -o 8196831
+
+--Listrak to validate the send 
+Query the erprelay db with: select * from sendlog where email = 'someemail@gmail.com'
+
+--open registry as another user--
+reg load HKU\<username> C:\Users\<username>\ntuser.dat
+
+
